@@ -134,4 +134,5 @@
     <string name="confirm_deletion_desc">Вы хочаце выдаліць %1$s?</string>
     <string name="downloading_desc">Спампоўваецца %1$d файлаў</string>
     <string name="downloaded">Спампавана %1$s</string>
+    <string name="special_episode">Спецвыпускі</string>
 </resources>
