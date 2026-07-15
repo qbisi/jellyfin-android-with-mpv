@@ -5,12 +5,14 @@ import androidx.annotation.CheckResult
 import androidx.core.net.toUri
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.MergingMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.source.SingleSampleMediaSource
+import kotlinx.coroutines.launch
 import org.jellyfin.mobile.data.dao.DownloadDao
 import org.jellyfin.mobile.player.PlayerException
 import org.jellyfin.mobile.player.PlayerViewModel
@@ -153,13 +155,15 @@ class QueueManager(
      * Reinitialize current media source without changing settings
      */
     fun tryRestartPlayback() {
-        with(getCurrentMediaSourceOrNull()) {
-            when (this) {
-                is LocalJellyfinMediaSource -> prepareStreams(this)
-                is RemoteJellyfinMediaSource -> prepareStreams(this)
-                null -> return
-            }.let {
-                viewModel.load(this, it, playWhenReady = true)
+        viewModel.viewModelScope.launch {
+            with(getCurrentMediaSourceOrNull()) {
+                when (this) {
+                    is LocalJellyfinMediaSource -> prepareStreams(this)
+                    is RemoteJellyfinMediaSource -> prepareStreams(this)
+                    null -> return@launch
+                }.let {
+                    viewModel.load(this, it, playWhenReady = true)
+                }
             }
         }
     }

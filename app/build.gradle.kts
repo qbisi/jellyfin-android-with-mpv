@@ -195,6 +195,7 @@ dependencies {
     testRuntimeOnly(libs.junit.engine)
     testImplementation(libs.bundles.kotest)
     testImplementation(libs.mockk)
+    testImplementation(libs.okhttp.mockwebserver)
     androidTestImplementation(libs.bundles.androidx.test)
 
     // Formatting rules for detekt

@@ -341,7 +341,7 @@ class PlayerViewModel(
         _player.value = null
     }
 
-    fun load(
+    suspend fun load(
         jellyfinMediaSource: JellyfinMediaSource,
         exoMediaSource: MediaSource,
         playWhenReady: Boolean,
@@ -357,7 +357,7 @@ class PlayerViewModel(
         player.prepare()
 
         initialTracksSelected.set(false)
-        if (startTime > Duration.ZERO) player.seekTo(startTime.inWholeMilliseconds)
+        if (startTime > Duration.ZERO && player !is MpvPlayer) player.seekTo(startTime.inWholeMilliseconds)
 
         applyMediaSegments(jellyfinMediaSource)
 

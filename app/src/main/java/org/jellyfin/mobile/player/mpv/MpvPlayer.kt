@@ -275,7 +275,7 @@ class MpvPlayer(
         seekCommand: Int,
     ): ListenableFuture<*> {
         val absolutePos = positionMs / MILLISECONDS_PER_SECOND
-        MpvCore.command(arrayOf("seek", (absolutePos).toString(), "absolute"))
+        MpvCore.command(arrayOf("seek", absolutePos.toString(), "absolute+keyframes"))
         return Futures.immediateFuture(null)
     }
 

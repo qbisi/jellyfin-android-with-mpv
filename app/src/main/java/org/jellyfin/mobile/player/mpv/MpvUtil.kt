@@ -6,6 +6,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.source.MediaSource
 import org.jellyfin.mobile.player.source.ExternalSubtitleStream
 import org.jellyfin.mobile.player.source.JellyfinMediaSource
+import org.jellyfin.mobile.player.source.RemoteJellyfinMediaSource
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.videosApi
 import org.jellyfin.sdk.api.operations.VideosApi
@@ -18,15 +19,28 @@ import org.koin.core.component.get
 object MpvUtil : KoinComponent {
     private val apiClient: ApiClient = get()
     private val videosApi: VideosApi = apiClient.videosApi
+    private val redirectResolver: MpvRedirectResolver = get()
 
-    fun convertJellyfinMediaSource(jellyfinMediaSource: JellyfinMediaSource): MediaItem {
-        val mediaItem =
-            createVideoMediaItem(jellyfinMediaSource)
-                .buildUpon()
-                .setSubtitleConfigurations(createExternalSubtitleConfiguration(jellyfinMediaSource))
-                .build()
+    suspend fun convertJellyfinMediaSource(jellyfinMediaSource: JellyfinMediaSource): MediaItem {
+        val mediaItem = createVideoMediaItem(jellyfinMediaSource)
+        val playbackUri = mediaItem.localConfiguration?.uri
+        val resolvedUri =
+            if (jellyfinMediaSource.shouldResolveRedirect() && playbackUri != null) {
+                redirectResolver.resolve(playbackUri.toString()).toUri()
+            } else {
+                playbackUri
+            }
+
         return mediaItem
+            .buildUpon()
+            .apply {
+                if (resolvedUri != null) setUri(resolvedUri)
+            }.setSubtitleConfigurations(createExternalSubtitleConfiguration(jellyfinMediaSource))
+            .build()
     }
+
+    private fun JellyfinMediaSource.shouldResolveRedirect(): Boolean =
+        this is RemoteJellyfinMediaSource && playMethod != PlayMethod.TRANSCODE
 
     /**
      * Builds the [MediaSource] for the main media stream (video/audio/embedded subs).
