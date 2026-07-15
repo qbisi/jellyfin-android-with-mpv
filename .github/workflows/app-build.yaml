@@ -3,8 +3,10 @@ name: App / Build
 on:
   push:
     branches:
-      - master
+      - main
+      - release-*
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -21,10 +23,14 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
+      - name: Install native build tools
+        run: sdkmanager "ndk;30.0.14904198" "cmake;4.1.2"
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
-      - name: Assemble debug APKs
-        run: ./gradlew assembleDebug
+      - name: Assemble Libre APKs
+        run: ./gradlew assembleLibreDebug assembleLibreRelease
       - name: Create publish bundle
         run: mkdir -p build/gh-app-publish/; find app/build/ -iname "*.apk" -exec mv "{}" build/gh-app-publish/ \;
       - name: Upload artifacts
