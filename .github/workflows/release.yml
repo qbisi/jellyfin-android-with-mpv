@@ -57,8 +57,14 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
 
-      - name: Verify and build
-        run: ./gradlew test detekt lint assembleLibreDebug assembleLibreRelease versionTxt
+      - name: Verify
+        run: ./gradlew test detekt lint
+
+      - name: Stop verification daemon
+        run: ./gradlew --stop
+
+      - name: Build prerelease
+        run: ./gradlew assembleLibreDebug assembleLibreRelease versionTxt
 
       - name: Prepare prerelease files
         shell: bash
