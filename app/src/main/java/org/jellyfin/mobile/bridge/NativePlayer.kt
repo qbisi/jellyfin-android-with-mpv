@@ -18,10 +18,10 @@ class NativePlayer(
     private val activityEventHandler: ActivityEventHandler,
     private val playerEventChannel: Channel<PlayerEvent>,
 ) {
-
     @JavascriptInterface
-    fun isEnabled() = appPreferences.videoPlayerType == VideoPlayerType.EXO_PLAYER || appPreferences.videoPlayerType ==
-        VideoPlayerType.MPV_PLAYER
+    fun isEnabled() =
+        appPreferences.videoPlayerType == VideoPlayerType.EXO_PLAYER || appPreferences.videoPlayerType ==
+            VideoPlayerType.MPV_PLAYER
 
     @JavascriptInterface
     fun loadPlayer(args: String) {

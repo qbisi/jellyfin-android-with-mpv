@@ -78,7 +78,6 @@ class TrackSelectionHelper(
 
         val player = viewModel.playerOrNull ?: return false
 
-
         val embeddedStreamIndex = mediaSource.getEmbeddedStreamIndex(audioStream)
         if (appPreferences.videoPlayerType == VideoPlayerType.MPV_PLAYER) {
             player as MpvPlayer
@@ -86,14 +85,14 @@ class TrackSelectionHelper(
             return true
         }
 
-        val sortedTrackGroups = player.currentTracks.groups.sortedBy { group ->
-            val formatId = group.mediaTrackGroup.getFormat(0).id
+        val sortedTrackGroups =
+            player.currentTracks.groups.sortedBy { group ->
+                val formatId = group.mediaTrackGroup.getFormat(0).id
 
-            // Sort by format ID, but pad number string with zeroes to ensure proper sorting
-            formatId?.toIntOrNull()?.let { id -> "%05d".format(id) } ?: formatId
-        }
+                // Sort by format ID, but pad number string with zeroes to ensure proper sorting
+                formatId?.toIntOrNull()?.let { id -> "%05d".format(id) } ?: formatId
+            }
         val audioGroup = sortedTrackGroups.getOrNull(embeddedStreamIndex) ?: return false
-
 
         return trackSelector.selectTrackByTypeAndGroup(C.TRACK_TYPE_AUDIO, audioGroup.mediaTrackGroup)
     }
@@ -129,7 +128,7 @@ class TrackSelectionHelper(
      * @param initial whether this is an initial selection and checks for re-selection should be skipped.
      * @see selectSubtitleTrack
      */
-    @Suppress("ReturnCount")
+    @Suppress("CyclomaticComplexMethod", "ReturnCount")
     private fun selectSubtitleTrack(
         mediaSource: JellyfinMediaSource,
         subtitleStream: MediaStream?,
@@ -145,7 +144,7 @@ class TrackSelectionHelper(
 
         if (appPreferences.videoPlayerType == VideoPlayerType.MPV_PLAYER) {
             player as MpvPlayer
-            if (subtitleStream==null){
+            if (subtitleStream == null) {
                 player.disableSubTrack()
                 return true
             }
@@ -163,10 +162,11 @@ class TrackSelectionHelper(
                     player.setSubtitleExternalTrack(subtitleStream.deliveryUrl)
                     return true
                 }
-                else -> return false
+                else -> {
+                    return false
+                }
             }
         }
-
 
         // Apply selection in player
         if (subtitleStream == null) {
@@ -197,7 +197,9 @@ class TrackSelectionHelper(
                 }
                 return false
             }
-            else -> return false
+            else -> {
+                return false
+            }
         }
     }
 
@@ -208,10 +210,11 @@ class TrackSelectionHelper(
      */
     suspend fun toggleSubtitles(): Boolean {
         val mediaSource = mediaSourceOrNull ?: return false
-        val newSubtitleIndex = when (mediaSource.selectedSubtitleStream) {
-            null -> mediaSource.subtitleStreams.firstOrNull()?.index ?: -1
-            else -> -1
-        }
+        val newSubtitleIndex =
+            when (mediaSource.selectedSubtitleStream) {
+                null -> mediaSource.subtitleStreams.firstOrNull()?.index ?: -1
+                else -> -1
+            }
         selectSubtitleTrack(newSubtitleIndex)
         // Media source may have changed by now
         return mediaSourceOrNull?.selectedSubtitleStream != null

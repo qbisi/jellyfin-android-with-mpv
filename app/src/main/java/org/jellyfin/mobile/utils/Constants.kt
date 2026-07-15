@@ -58,21 +58,24 @@ object Constants {
     const val PLAYBACK_MANAGER_COMMAND_VOL_DOWN = "volumeDown"
 
     // Notification
-    val PENDING_INTENT_FLAGS = PendingIntent.FLAG_UPDATE_CURRENT or when {
-        AndroidVersion.isAtLeastM -> PendingIntent.FLAG_IMMUTABLE
-        else -> 0
-    }
+    val PENDING_INTENT_FLAGS =
+        PendingIntent.FLAG_UPDATE_CURRENT or
+            when {
+                AndroidVersion.isAtLeastM -> PendingIntent.FLAG_IMMUTABLE
+                else -> 0
+            }
     const val MEDIA_NOTIFICATION_CHANNEL_ID = "org.jellyfin.mobile.media.NOW_PLAYING"
     const val DOWNLOAD_NOTIFICATION_CHANNEL_ID = "org.jellyfin.mobile.download.DOWNLOAD_PROGRESS"
 
     // Music player constants
-    const val SUPPORTED_MUSIC_PLAYER_PLAYBACK_ACTIONS: Long = PlaybackState.ACTION_PLAY_PAUSE or
-        PlaybackState.ACTION_PLAY or
-        PlaybackState.ACTION_PAUSE or
-        PlaybackState.ACTION_STOP or
-        PlaybackState.ACTION_SKIP_TO_NEXT or
-        PlaybackState.ACTION_SKIP_TO_PREVIOUS or
-        PlaybackState.ACTION_SET_RATING
+    const val SUPPORTED_MUSIC_PLAYER_PLAYBACK_ACTIONS: Long =
+        PlaybackState.ACTION_PLAY_PAUSE or
+            PlaybackState.ACTION_PLAY or
+            PlaybackState.ACTION_PAUSE or
+            PlaybackState.ACTION_STOP or
+            PlaybackState.ACTION_SKIP_TO_NEXT or
+            PlaybackState.ACTION_SKIP_TO_PREVIOUS or
+            PlaybackState.ACTION_SET_RATING
     const val MEDIA_PLAYER_NOTIFICATION_ID = 42
     const val REMOTE_PLAYER_CONTENT_INTENT_REQUEST_CODE = 100
 
@@ -123,13 +126,14 @@ object Constants {
     val ASPECT_RATIO_16_9 = Rational(16, 9)
     val PIP_MIN_RATIONAL = Rational(100, 239)
     val PIP_MAX_RATIONAL = Rational(239, 100)
-    const val SUPPORTED_VIDEO_PLAYER_PLAYBACK_ACTIONS: Long = PlaybackState.ACTION_PLAY_PAUSE or
-        PlaybackState.ACTION_PLAY or
-        PlaybackState.ACTION_PAUSE or
-        PlaybackState.ACTION_SEEK_TO or
-        PlaybackState.ACTION_REWIND or
-        PlaybackState.ACTION_FAST_FORWARD or
-        PlaybackState.ACTION_STOP
+    const val SUPPORTED_VIDEO_PLAYER_PLAYBACK_ACTIONS: Long =
+        PlaybackState.ACTION_PLAY_PAUSE or
+            PlaybackState.ACTION_PLAY or
+            PlaybackState.ACTION_PAUSE or
+            PlaybackState.ACTION_SEEK_TO or
+            PlaybackState.ACTION_REWIND or
+            PlaybackState.ACTION_FAST_FORWARD or
+            PlaybackState.ACTION_STOP
     const val VIDEO_PLAYER_NOTIFICATION_ID = 99
     const val DOWNLOAD_NOTIFICATION_ID = 80
     const val MAX_SKIP_TO_PREV_CHAPTER_MS = 10_000L

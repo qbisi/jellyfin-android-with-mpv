@@ -2,7 +2,6 @@ package org.jellyfin.mobile
 
 import android.app.Application
 import android.os.StrictMode
-import android.util.Log
 import android.webkit.WebView
 import org.jellyfin.mobile.app.apiModule
 import org.jellyfin.mobile.app.applicationModule
@@ -20,7 +19,11 @@ import java.io.IOException
 class JellyfinApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-        val policy: StrictMode.ThreadPolicy  =  StrictMode.ThreadPolicy.Builder().permitAll().build()
+        val policy: StrictMode.ThreadPolicy =
+            StrictMode.ThreadPolicy
+                .Builder()
+                .permitAll()
+                .build()
         StrictMode.setThreadPolicy(policy)
 
         // Setup logging
@@ -46,7 +49,11 @@ class JellyfinApplication : Application() {
     }
 
     @Throws(IOException::class)
-    private fun copyMpvAssetFolder(assetMpvDir: String, outputDir: File) {
+    @Suppress("NestedBlockDepth")
+    private fun copyMpvAssetFolder(
+        assetMpvDir: String,
+        outputDir: File,
+    ) {
         outputDir.mkdirs()
         val mpvFiles = assets.list(assetMpvDir) ?: return
 
@@ -55,7 +62,7 @@ class JellyfinApplication : Application() {
             val outFile = File(outputDir, asset)
             if (outFile.isDirectory) {
                 copyMpvAssetFolder(assetPath, outFile)
-            }else{
+            } else {
                 if (outFile.exists()) {
                     continue
                 }
@@ -70,7 +77,6 @@ class JellyfinApplication : Application() {
                     Timber.tag("error").e(e)
                 }
             }
-
         }
     }
 }

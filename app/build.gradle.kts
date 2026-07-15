@@ -30,6 +30,7 @@ kotlin {
 android {
     namespace = "org.jellyfin.mobile"
     compileSdk = 36
+    ndkVersion = "30.0.14904198"
 
     defaultConfig {
         minSdk = 26
@@ -38,6 +39,12 @@ android {
         versionCode = getVersionCode(versionName!!)
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
+
+        externalNativeBuild {
+            cmake {
+                arguments += "-DANDROID_STL=none"
+            }
+        }
     }
 
     val releaseSigningConfig = SigningHelper.loadSigningConfig(project)?.let { config ->
@@ -100,6 +107,12 @@ android {
         buildConfig = true
         viewBinding = true
         compose = true
+    }
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "4.1.2"
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

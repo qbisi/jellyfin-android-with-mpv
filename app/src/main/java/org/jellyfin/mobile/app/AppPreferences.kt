@@ -13,7 +13,9 @@ import org.jellyfin.mobile.utils.Constants
 import org.jellyfin.sdk.model.api.MediaSegmentType
 import java.io.File
 
-class AppPreferences(context: Context) {
+class AppPreferences(
+    context: Context,
+) {
     private val sharedPreferences: SharedPreferences =
         context.getSharedPreferences("${context.packageName}_preferences", Context.MODE_PRIVATE)
 
@@ -107,13 +109,14 @@ class AppPreferences(context: Context) {
      * The actions to take for each media segment type. Managed by the MediaSegmentRepository.
      */
     var mediaSegmentActions: String
-        get() = sharedPreferences.getString(
-            Constants.PREF_MEDIA_SEGMENT_ACTIONS,
-            mapOf(
-                MediaSegmentType.INTRO to MediaSegmentAction.ASK_TO_SKIP,
-                MediaSegmentType.OUTRO to MediaSegmentAction.ASK_TO_SKIP,
-            ).toMediaSegmentActionsString(),
-        )!!
+        get() =
+            sharedPreferences.getString(
+                Constants.PREF_MEDIA_SEGMENT_ACTIONS,
+                mapOf(
+                    MediaSegmentType.INTRO to MediaSegmentAction.ASK_TO_SKIP,
+                    MediaSegmentType.OUTRO to MediaSegmentAction.ASK_TO_SKIP,
+                ).toMediaSegmentActionsString(),
+            )!!
         set(value) = sharedPreferences.edit { putString(Constants.PREF_MEDIA_SEGMENT_ACTIONS, value) }
 
     val musicNotificationAlwaysDismissible: Boolean
@@ -156,5 +159,4 @@ class AppPreferences(context: Context) {
 
     val mpvUseEmbedFont: Boolean
         get() = sharedPreferences.getBoolean(Constants.PREF_MPV_USE_EMBED_FONT, true)
-
 }

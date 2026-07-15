@@ -58,7 +58,9 @@ import kotlin.math.max
 import androidx.media3.ui.R as Media3R
 
 @Suppress("TooManyFunctions")
-class PlayerFragment : Fragment(), BackPressInterceptor {
+class PlayerFragment :
+    Fragment(),
+    BackPressInterceptor {
     private val appPreferences: AppPreferences by inject()
     private val viewModel: PlayerViewModel by viewModels()
     private var _playerBinding: FragmentPlayerBinding? = null
@@ -145,23 +147,33 @@ class PlayerFragment : Fragment(), BackPressInterceptor {
         }
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?,
+    ): View {
         _playerBinding = FragmentPlayerBinding.inflate(layoutInflater)
         _playerControlsBinding = ExoPlayerControlViewBinding.bind(playerBinding.root.findViewById(R.id.player_controls))
         return playerBinding.root
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
 
         // Insets handling
         ViewCompat.setOnApplyWindowInsetsListener(playerBinding.root) { _, insets ->
             playerFullscreenHelper.onWindowInsetsChanged(insets)
 
-            val systemInsets = when {
-                AndroidVersion.isAtLeastR -> insets.getInsetsIgnoringVisibility(WindowInsetsCompat.Type.systemBars())
-                else -> insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            }
+            val systemInsets =
+                when {
+                    AndroidVersion.isAtLeastR -> insets.getInsetsIgnoringVisibility(
+                        WindowInsetsCompat.Type.systemBars(),
+                    )
+                    else -> insets.getInsets(WindowInsetsCompat.Type.systemBars())
+                }
             if (playerFullscreenHelper.isFullscreen) {
                 playerView.setPadding(0)
                 playerControlsView.updatePadding(
@@ -187,10 +199,11 @@ class PlayerFragment : Fragment(), BackPressInterceptor {
             )
 
             // Update fullscreen switcher icon
-            val fullscreenDrawable = when {
-                playerFullscreenHelper.isFullscreen -> R.drawable.ic_fullscreen_exit_white_32dp
-                else -> R.drawable.ic_fullscreen_enter_white_32dp
-            }
+            val fullscreenDrawable =
+                when {
+                    playerFullscreenHelper.isFullscreen -> R.drawable.ic_fullscreen_exit_white_32dp
+                    else -> R.drawable.ic_fullscreen_enter_white_32dp
+                }
             fullscreenSwitcher.setImageResource(fullscreenDrawable)
 
             insets
@@ -209,7 +222,7 @@ class PlayerFragment : Fragment(), BackPressInterceptor {
         playerView.setControllerAnimationEnabled(false)
 
         playerLockScreenHelper = PlayerLockScreenHelper(this, playerBinding, orientationListener)
-        playerGestureHelper = PlayerGestureHelper(this, playerBinding, playerLockScreenHelper,viewModel.player.value)
+        playerGestureHelper = PlayerGestureHelper(this, playerBinding, playerLockScreenHelper, viewModel.player.value)
 
         // Handle fullscreen switcher
         fullscreenSwitcher.setOnClickListener {
@@ -262,10 +275,11 @@ class PlayerFragment : Fragment(), BackPressInterceptor {
         val videoTrack = currentVideoStream
         if (videoTrack == null || videoTrack.isLandscape) {
             val current = resources.configuration.orientation
-            requireActivity().requestedOrientation = when (current) {
-                Configuration.ORIENTATION_PORTRAIT -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-                else -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-            }
+            requireActivity().requestedOrientation =
+                when (current) {
+                    Configuration.ORIENTATION_PORTRAIT -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                    else -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                }
             // No need to call playerFullscreenHelper in this case,
             // since the configuration change triggers updateFullscreenState,
             // which does it for us.
@@ -281,8 +295,7 @@ class PlayerFragment : Fragment(), BackPressInterceptor {
         playerView.controllerShowTimeoutMs = if (suppress) -1 else DEFAULT_CONTROLS_TIMEOUT_MS
     }
 
-    fun isLandscape(configuration: Configuration = resources.configuration) =
-        configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    fun isLandscape(configuration: Configuration = resources.configuration) = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     fun onRewind() = viewModel.rewind()
 
@@ -295,44 +308,55 @@ class PlayerFragment : Fragment(), BackPressInterceptor {
     /**
      * @param callback called if track selection was successful and UI needs to be updated
      */
-    fun onAudioTrackSelected(index: Int, callback: TrackSelectionCallback): Job = lifecycleScope.launch {
-        if (viewModel.trackSelectionHelper.selectAudioTrack(index)) {
-            callback.onTrackSelected(true)
+    fun onAudioTrackSelected(
+        index: Int,
+        callback: TrackSelectionCallback,
+    ): Job =
+        lifecycleScope.launch {
+            if (viewModel.trackSelectionHelper.selectAudioTrack(index)) {
+                callback.onTrackSelected(true)
+            }
         }
-    }
 
     /**
      * @param callback called if track selection was successful and UI needs to be updated
      */
-    fun onSubtitleSelected(index: Int, callback: TrackSelectionCallback): Job = lifecycleScope.launch {
-        if (viewModel.trackSelectionHelper.selectSubtitleTrack(index)) {
-            callback.onTrackSelected(true)
+    fun onSubtitleSelected(
+        index: Int,
+        callback: TrackSelectionCallback,
+    ): Job =
+        lifecycleScope.launch {
+            if (viewModel.trackSelectionHelper.selectSubtitleTrack(index)) {
+                callback.onTrackSelected(true)
+            }
         }
-    }
 
     /**
      * Toggle subtitles, selecting the first by [MediaStream.index] if there are multiple.
      *
      * @return true if subtitles are enabled now, false if not
      */
-    fun toggleSubtitles(callback: TrackSelectionCallback) = lifecycleScope.launch {
-        callback.onTrackSelected(viewModel.trackSelectionHelper.toggleSubtitles())
-    }
+    fun toggleSubtitles(callback: TrackSelectionCallback) =
+        lifecycleScope.launch {
+            callback.onTrackSelected(viewModel.trackSelectionHelper.toggleSubtitles())
+        }
 
-    fun onBitrateChanged(bitrate: Int?, callback: TrackSelectionCallback) = lifecycleScope.launch {
+    fun onBitrateChanged(
+        bitrate: Int?,
+        callback: TrackSelectionCallback,
+    ) = lifecycleScope.launch {
         callback.onTrackSelected(viewModel.changeBitrate(bitrate))
     }
 
     /**
      * @return true if the playback speed was changed
      */
-    fun onSpeedSelected(speed: Float): Boolean {
-        return viewModel.setPlaybackSpeed(speed)
-    }
+    fun onSpeedSelected(speed: Float): Boolean = viewModel.setPlaybackSpeed(speed)
 
-    fun onPressSpeedUp(isPressing: Boolean): Boolean {
-        return viewModel.setPressSpeedUp(isPressing, Constants.HOLD_SPEEDUP_MULTIPLIER)
-    }
+    fun onPressSpeedUp(isPressing: Boolean): Boolean = viewModel.setPressSpeedUp(
+        isPressing,
+        Constants.HOLD_SPEEDUP_MULTIPLIER,
+    )
 
     fun onDecoderSelected(type: DecoderType) {
         viewModel.updateDecoderType(type)
@@ -366,22 +390,27 @@ class PlayerFragment : Fragment(), BackPressInterceptor {
     @RequiresApi(Build.VERSION_CODES.N)
     private fun Activity.enterPictureInPicture() {
         if (AndroidVersion.isAtLeastO) {
-            val params = PictureInPictureParams.Builder().apply {
-                val aspectRational = currentVideoStream?.aspectRational?.let { aspectRational ->
-                    when {
-                        aspectRational < PIP_MIN_RATIONAL -> PIP_MIN_RATIONAL
-                        aspectRational > PIP_MAX_RATIONAL -> PIP_MAX_RATIONAL
-                        else -> aspectRational
-                    }
-                }
-                setAspectRatio(aspectRational)
-                val contentFrame: View = playerView.findViewById(Media3R.id.exo_content_frame)
-                val contentRect = with(contentFrame) {
-                    val (x, y) = intArrayOf(0, 0).also(::getLocationInWindow)
-                    Rect(x, y, x + width, y + height)
-                }
-                setSourceRectHint(contentRect)
-            }.build()
+            val params =
+                PictureInPictureParams
+                    .Builder()
+                    .apply {
+                        val aspectRational =
+                            currentVideoStream?.aspectRational?.let { aspectRational ->
+                                when {
+                                    aspectRational < PIP_MIN_RATIONAL -> PIP_MIN_RATIONAL
+                                    aspectRational > PIP_MAX_RATIONAL -> PIP_MAX_RATIONAL
+                                    else -> aspectRational
+                                }
+                            }
+                        setAspectRatio(aspectRational)
+                        val contentFrame: View = playerView.findViewById(Media3R.id.exo_content_frame)
+                        val contentRect =
+                            with(contentFrame) {
+                                val (x, y) = intArrayOf(0, 0).also(::getLocationInWindow)
+                                Rect(x, y, x + width, y + height)
+                            }
+                        setSourceRectHint(contentRect)
+                    }.build()
             enterPictureInPictureMode(params)
         } else {
             @Suppress("DEPRECATION")

@@ -99,8 +99,12 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
-@Suppress("TooManyFunctions")
-class PlayerViewModel(application: Application) : AndroidViewModel(application), KoinComponent, Player.Listener {
+@Suppress("LargeClass", "TooManyFunctions")
+class PlayerViewModel(
+    application: Application,
+) : AndroidViewModel(application),
+    KoinComponent,
+    Player.Listener {
     private val appPreferences: AppPreferences by inject()
     private val apiClient: ApiClient = get()
     private val displayPreferencesApi: DisplayPreferencesApi = apiClient.displayPreferencesApi
@@ -114,7 +118,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application),
 
     // Media source handling
     private val trackSelector = DefaultTrackSelector(getApplication())
-    val trackSelectionHelper = TrackSelectionHelper(this, trackSelector,appPreferences)
+    val trackSelectionHelper = TrackSelectionHelper(this, trackSelector, appPreferences)
     val queueManager = QueueManager(this)
     val mediaSourceOrNull: JellyfinMediaSource?
         get() = queueManager.getCurrentMediaSourceOrNull()
@@ -177,31 +181,37 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application),
         viewModelScope.launch {
             var customPrefs: Map<String, String?>? = null
             try {
-                val displayPreferencesDto = withContext(Dispatchers.IO) {
-                    displayPreferencesApi.getDisplayPreferences(
-                        displayPreferencesId = Constants.DISPLAY_PREFERENCES_ID_USER_SETTINGS,
-                        client = Constants.DISPLAY_PREFERENCES_CLIENT_EMBY,
-                    ).content
-                }
+                val displayPreferencesDto =
+                    withContext(Dispatchers.IO) {
+                        displayPreferencesApi
+                            .getDisplayPreferences(
+                                displayPreferencesId = Constants.DISPLAY_PREFERENCES_ID_USER_SETTINGS,
+                                client = Constants.DISPLAY_PREFERENCES_CLIENT_EMBY,
+                            ).content
+                    }
 
                 customPrefs = displayPreferencesDto.customPrefs
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to load display preferences from API")
             }
 
-            displayPreferences = DisplayPreferences(
-                skipBackLength = customPrefs?.get(Constants.DISPLAY_PREFERENCES_SKIP_BACK_LENGTH)?.toLongOrNull()
-                    ?: Constants.DEFAULT_SEEK_TIME_MS,
-                skipForwardLength = customPrefs?.get(Constants.DISPLAY_PREFERENCES_SKIP_FORWARD_LENGTH)?.toLongOrNull()
-                    ?: Constants.DEFAULT_SEEK_TIME_MS,
-            )
+            displayPreferences =
+                DisplayPreferences(
+                    skipBackLength =
+                    customPrefs?.get(Constants.DISPLAY_PREFERENCES_SKIP_BACK_LENGTH)?.toLongOrNull()
+                        ?: Constants.DEFAULT_SEEK_TIME_MS,
+                    skipForwardLength =
+                    customPrefs?.get(Constants.DISPLAY_PREFERENCES_SKIP_FORWARD_LENGTH)?.toLongOrNull()
+                        ?: Constants.DEFAULT_SEEK_TIME_MS,
+                )
         }
 
         viewModelScope.launch {
             try {
-                val userConfig = withContext(Dispatchers.IO) {
-                    userApi.getCurrentUser().content.configuration
-                }
+                val userConfig =
+                    withContext(Dispatchers.IO) {
+                        userApi.getCurrentUser().content.configuration
+                    }
                 autoPlayNextEpisodeEnabled = userConfig?.enableNextEpisodeAutoPlay ?: false
             } catch (e: ApiClientException) {
                 Timber.e(e, "Failed to load auto play preference")
@@ -212,10 +222,18 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application),
         viewModelScope.launch {
             for (event in playerEventChannel) {
                 when (event) {
-                    PlayerEvent.Pause -> mediaSessionCallback.onPause()
-                    PlayerEvent.Resume -> mediaSessionCallback.onPlay()
-                    PlayerEvent.Stop, PlayerEvent.Destroy -> mediaSessionCallback.onStop()
-                    is PlayerEvent.Seek -> playerOrNull?.seekTo(event.duration.inWholeMilliseconds)
+                    PlayerEvent.Pause -> {
+                        mediaSessionCallback.onPause()
+                    }
+                    PlayerEvent.Resume -> {
+                        mediaSessionCallback.onPlay()
+                    }
+                    PlayerEvent.Stop, PlayerEvent.Destroy -> {
+                        mediaSessionCallback.onStop()
+                    }
+                    is PlayerEvent.Seek -> {
+                        playerOrNull?.seekTo(event.duration.inWholeMilliseconds)
+                    }
                     is PlayerEvent.SetVolume -> {
                         setVolume(event.volume)
                         playerOrNull?.reportPlaybackState()
@@ -225,69 +243,83 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application),
         }
     }
 
-    private fun buildAnalyticsCollector() = DefaultAnalyticsCollector(Clock.DEFAULT).apply {
-        addListener(eventLogger)
-    }
+    private fun buildAnalyticsCollector() =
+        DefaultAnalyticsCollector(Clock.DEFAULT).apply {
+            addListener(eventLogger)
+        }
 
     /**
      * Setup a new [ExoPlayer] for video playback, register callbacks and set attributes
      */
+    @Suppress("LongMethod")
     fun setupPlayer() {
-        val renderersFactory = DefaultRenderersFactory(getApplication()).apply {
-            setEnableDecoderFallback(true) // Fallback only works if initialization fails, not decoding at playback time
-            val rendererMode = when {
-                fallbackPreferExtensionRenderers -> DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER
-                else -> DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON
-            }
-            setExtensionRendererMode(rendererMode)
-            setMediaCodecSelector { mimeType, requiresSecureDecoder, requiresTunnelingDecoder ->
-                val decoderInfoList = MediaCodecSelector.DEFAULT.getDecoderInfos(
-                    mimeType,
-                    requiresSecureDecoder,
-                    requiresTunnelingDecoder,
-                )
-                // Allow decoder selection only for video track
-                if (!MimeTypes.isVideo(mimeType)) {
-                    return@setMediaCodecSelector decoderInfoList
-                }
-                val filteredDecoderList = when (decoderType.value) {
-                    DecoderType.HARDWARE -> decoderInfoList.filter(MediaCodecInfo::hardwareAccelerated)
-                    DecoderType.SOFTWARE -> decoderInfoList.filterNot(MediaCodecInfo::hardwareAccelerated)
-                    else -> decoderInfoList
-                }
-                // Update the decoderType based on the first decoder selected
-                filteredDecoderList.firstOrNull()?.let { decoder ->
-                    val decoderType = when {
-                        decoder.hardwareAccelerated -> DecoderType.HARDWARE
-                        else -> DecoderType.SOFTWARE
+        val renderersFactory =
+            DefaultRenderersFactory(getApplication()).apply {
+                setEnableDecoderFallback(
+                    true,
+                ) // Fallback only works if initialization fails, not decoding at playback time
+                val rendererMode =
+                    when {
+                        fallbackPreferExtensionRenderers -> DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER
+                        else -> DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON
                     }
-                    _decoderType.postValue(decoderType)
-                }
+                setExtensionRendererMode(rendererMode)
+                setMediaCodecSelector { mimeType, requiresSecureDecoder, requiresTunnelingDecoder ->
+                    val decoderInfoList =
+                        MediaCodecSelector.DEFAULT.getDecoderInfos(
+                            mimeType,
+                            requiresSecureDecoder,
+                            requiresTunnelingDecoder,
+                        )
+                    // Allow decoder selection only for video track
+                    if (!MimeTypes.isVideo(mimeType)) {
+                        return@setMediaCodecSelector decoderInfoList
+                    }
+                    val filteredDecoderList =
+                        when (decoderType.value) {
+                            DecoderType.HARDWARE -> decoderInfoList.filter(MediaCodecInfo::hardwareAccelerated)
+                            DecoderType.SOFTWARE -> decoderInfoList.filterNot(MediaCodecInfo::hardwareAccelerated)
+                            else -> decoderInfoList
+                        }
+                    // Update the decoderType based on the first decoder selected
+                    filteredDecoderList.firstOrNull()?.let { decoder ->
+                        val decoderType =
+                            when {
+                                decoder.hardwareAccelerated -> DecoderType.HARDWARE
+                                else -> DecoderType.SOFTWARE
+                            }
+                        _decoderType.postValue(decoderType)
+                    }
 
-                filteredDecoderList
+                    filteredDecoderList
+                }
             }
-        }
         when (appPreferences.videoPlayerType) {
             VideoPlayerType.EXO_PLAYER -> {
-                _player.value = ExoPlayer.Builder(getApplication(), renderersFactory, get()).apply {
-                    setUsePlatformDiagnostics(false)
-                    setTrackSelector(trackSelector)
-                    setAnalyticsCollector(analyticsCollector)
-                }.build().apply {
-                    addListener(this@PlayerViewModel)
-                    applyDefaultAudioAttributes(C.AUDIO_CONTENT_TYPE_MOVIE)
-                }
+                _player.value =
+                    ExoPlayer
+                        .Builder(getApplication(), renderersFactory, get())
+                        .apply {
+                            setUsePlatformDiagnostics(false)
+                            setTrackSelector(trackSelector)
+                            setAnalyticsCollector(analyticsCollector)
+                        }.build()
+                        .apply {
+                            addListener(this@PlayerViewModel)
+                            applyDefaultAudioAttributes(C.AUDIO_CONTENT_TYPE_MOVIE)
+                        }
             }
             VideoPlayerType.MPV_PLAYER -> {
-                _player.value =MpvPlayer(application,Looper.getMainLooper(),appPreferences).apply {
-                    setDecoderProcessor (
-                        {decoderType.value?:DecoderType.HARDWARE },
-                        { _decoderType.postValue(it) }
-                    )
-                    setAnalyticsCollector(analyticsCollector)
-                    addListener(this@PlayerViewModel)
-                    applyDefaultAudioAttributes(C.AUDIO_CONTENT_TYPE_MOVIE)
-                }
+                _player.value =
+                    MpvPlayer(application, Looper.getMainLooper(), appPreferences).apply {
+                        setDecoderProcessor(
+                            { decoderType.value ?: DecoderType.HARDWARE },
+                            { _decoderType.postValue(it) },
+                        )
+                        setAnalyticsCollector(analyticsCollector)
+                        addListener(this@PlayerViewModel)
+                        applyDefaultAudioAttributes(C.AUDIO_CONTENT_TYPE_MOVIE)
+                    }
             }
             else -> {
                 throw IllegalArgumentException("Invalid video player type")
@@ -309,13 +341,17 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application),
         _player.value = null
     }
 
-    fun load(jellyfinMediaSource: JellyfinMediaSource, exoMediaSource: MediaSource, playWhenReady: Boolean) {
+    fun load(
+        jellyfinMediaSource: JellyfinMediaSource,
+        exoMediaSource: MediaSource,
+        playWhenReady: Boolean,
+    ) {
         val startTime = jellyfinMediaSource.startTime
         val player = playerOrNull ?: return
-        if (player is ExoPlayer){
+        if (player is ExoPlayer) {
             player.setMediaSource(exoMediaSource)
-        }else if (player is MpvPlayer){
-            player.setMediaItem(MpvUtil.convertJellyfinMediaSource(jellyfinMediaSource),startTime.inWholeMilliseconds)
+        } else if (player is MpvPlayer) {
+            player.setMediaItem(MpvUtil.convertJellyfinMediaSource(jellyfinMediaSource), startTime.inWholeMilliseconds)
         }
 
         player.prepare()
@@ -336,7 +372,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application),
         }
     }
 
-    fun loadDirect( playWhenReady: Boolean) {
+    fun loadDirect(playWhenReady: Boolean) {
         val player = playerOrNull ?: return
         player.setMediaItem(MediaItem.fromUri("http://baidu.com"))
         player.prepare()
@@ -346,18 +382,18 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application),
         val startTime = Duration.ZERO
         if (startTime > Duration.ZERO) player.seekTo(startTime.inWholeMilliseconds)
 
-
         player.playWhenReady = playWhenReady
     }
 
     private fun startProgressUpdates() {
         if (mediaSourceOrNull != null && mediaSourceOrNull !is RemoteJellyfinMediaSource) return
-        progressUpdateJob = viewModelScope.launch {
-            while (true) {
-                delay(Constants.PLAYER_TIME_UPDATE_RATE)
-                playerOrNull?.reportPlaybackState()
+        progressUpdateJob =
+            viewModelScope.launch {
+                while (true) {
+                    delay(Constants.PLAYER_TIME_UPDATE_RATE)
+                    playerOrNull?.reportPlaybackState()
+                }
             }
-        }
     }
 
     private fun stopProgressUpdates() {
@@ -365,12 +401,13 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application),
     }
 
     private fun startChapterMarkingUpdates() {
-        chapterMarkingUpdateJob = viewModelScope.launch {
-            while (true) {
-                delay(Constants.CHAPTER_MARKING_UPDATE_DELAY)
-                playerOrNull?.setWatchedChapterMarkings()
+        chapterMarkingUpdateJob =
+            viewModelScope.launch {
+                while (true) {
+                    delay(Constants.CHAPTER_MARKING_UPDATE_DELAY)
+                    playerOrNull?.setWatchedChapterMarkings()
+                }
             }
-        }
     }
 
     private fun stopChapterMarkingUpdates() {
@@ -378,12 +415,13 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application),
     }
 
     private fun startSkipMediaSegmentUpdates() {
-        skipMediaSegmentUpdateJob = viewModelScope.launch {
-            while (true) {
-                delay(Constants.SKIP_MEDIA_SEGMENT_UPDATE_DELAY)
-                playerOrNull?.updateSkipMediaSegmentButton()
+        skipMediaSegmentUpdateJob =
+            viewModelScope.launch {
+                while (true) {
+                    delay(Constants.SKIP_MEDIA_SEGMENT_UPDATE_DELAY)
+                    playerOrNull?.updateSkipMediaSegmentButton()
+                }
             }
-        }
     }
 
     private fun stopSkipMediaSegmentUpdates() {
@@ -395,7 +433,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application),
      * recreate the player with the selected decoder type
      */
     fun updateDecoderType(type: DecoderType) {
-        _decoderType.value=type
+        _decoderType.value = type
         analyticsCollector.release()
         val playedTime = (playerOrNull?.currentPosition ?: 0L).milliseconds
         // Stop and release the player without ending playback
@@ -499,10 +537,11 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application),
         val mediaSource = mediaSourceOrNull as? RemoteJellyfinMediaSource ?: return
         val player = playerOrNull ?: return
         val hasFinished = player.playbackState == Player.STATE_ENDED
-        val lastPositionTicks = when {
-            hasFinished -> mediaSource.runTime.inWholeTicks
-            else -> player.currentPosition.milliseconds.inWholeTicks
-        }
+        val lastPositionTicks =
+            when {
+                hasFinished -> mediaSource.runTime.inWholeTicks
+                else -> player.currentPosition.milliseconds.inWholeTicks
+            }
 
         // viewModelScope may already be cancelled at this point, so we need to fallback
         CoroutineScope(Dispatchers.Main).launch {
@@ -571,7 +610,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application),
 
     private fun addSkipAction(mediaSegment: MediaSegmentDto) {
         val player = playerOrNull ?: return
-        if (player is ExoPlayer){
+        if (player is ExoPlayer) {
             player
                 .createMessage { _, _ ->
                     viewModelScope.launch(Dispatchers.Main) {
@@ -602,12 +641,18 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application),
         playerOrNull?.seekToOffset(displayPreferences.skipForwardLength)
     }
 
-    private fun getCurrentChapterStartPosition(chapters: List<ChapterInfo>, playbackPosition: Duration): Duration? {
+    private fun getCurrentChapterStartPosition(
+        chapters: List<ChapterInfo>,
+        playbackPosition: Duration,
+    ): Duration? {
         val startPositions = chapters.map { c -> c.startPositionTicks.ticks }
         return startPositions.findLast { pos -> playbackPosition >= pos }
     }
 
-    private fun getNextChapterStartPosition(chapters: List<ChapterInfo>, playbackPosition: Duration): Duration? {
+    private fun getNextChapterStartPosition(
+        chapters: List<ChapterInfo>,
+        playbackPosition: Duration,
+    ): Duration? {
         val startPositions = chapters.map { c -> c.startPositionTicks.ticks }
         val currentChapterIdx = startPositions.indexOfLast { pos -> playbackPosition >= pos }
         if (currentChapterIdx == -1) return null
@@ -648,16 +693,20 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application),
         val player = playerOrNull ?: return
         when {
             // Skip to previous element
-            player.currentPosition <= Constants.MAX_SKIP_TO_PREV_MS -> viewModelScope.launch {
-                pause()
-                if (!queueManager.previous()) {
-                    // Skip to previous failed, go to start of video anyway
-                    playerOrNull?.seekTo(0)
-                    play()
+            player.currentPosition <= Constants.MAX_SKIP_TO_PREV_MS -> {
+                viewModelScope.launch {
+                    pause()
+                    if (!queueManager.previous()) {
+                        // Skip to previous failed, go to start of video anyway
+                        playerOrNull?.seekTo(0)
+                        play()
+                    }
                 }
             }
             // Rewind to start of track if not at the start already
-            else -> player.seekTo(0)
+            else -> {
+                player.seekTo(0)
+            }
         }
     }
 
@@ -687,9 +736,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application),
         playerOrNull?.logTracks(analyticsCollector)
     }
 
-    suspend fun changeBitrate(bitrate: Int?): Boolean {
-        return queueManager.changeBitrate(bitrate)
-    }
+    suspend fun changeBitrate(bitrate: Int?): Boolean = queueManager.changeBitrate(bitrate)
 
     /**
      * Set the playback speed to [speed]
@@ -707,7 +754,10 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application),
         return false
     }
 
-    fun setPressSpeedUp(isPressing: Boolean, speed: Float): Boolean {
+    fun setPressSpeedUp(
+        isPressing: Boolean,
+        speed: Float,
+    ): Boolean {
         if (!isPressing) {
             return setPlaybackSpeed(playSpeed)
         }
@@ -733,7 +783,10 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application),
 
     @Deprecated("Deprecated in Java")
     @SuppressLint("SwitchIntDef")
-    override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
+    override fun onPlayerStateChanged(
+        playWhenReady: Boolean,
+        playbackState: Int,
+    ) {
         val player = playerOrNull ?: return
 
         // Notify fragment of current state
@@ -789,7 +842,11 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application),
         }
     }
 
-    override fun onPositionDiscontinuity(oldPosition: Player.PositionInfo, newPosition: Player.PositionInfo, reason: Int) {
+    override fun onPositionDiscontinuity(
+        oldPosition: Player.PositionInfo,
+        newPosition: Player.PositionInfo,
+        reason: Int,
+    ) {
         super.onPositionDiscontinuity(oldPosition, newPosition, reason)
         playerOrNull?.setWatchedChapterMarkings()
         playerOrNull?.updateSkipMediaSegmentButton()
